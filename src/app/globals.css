@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* MUSEA design tokens */
+  --gallery-black: #0e0d0b;
+  --gallery-soot: #16140f;
+  --bone: #ece5d3;
+  --bone-deep: #ddd3bb;
+  --museum-white: #f7f3e8;
+  --gilt: #c9a227;
+  --gilt-bright: #e8c95a;
+  --oxblood: #6e1f1f;
+  --graphite: #2a2722;
+  --ink-soft: #4d473c;
+}
+
+html,
+body {
+  background: var(--gallery-black);
+  color: var(--bone);
+  font-family: "EB Garamond", Georgia, serif;
+}
+
+.font-display {
+  font-family: "Marcellus", "Times New Roman", serif;
+}
+.font-body {
+  font-family: "EB Garamond", Georgia, serif;
+}
+.font-utility {
+  font-family: "Archivo", system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--gilt);
+  color: var(--gallery-black);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
