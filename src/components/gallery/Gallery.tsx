@@ -393,11 +393,9 @@ function PaintingOnWall({
       >
         <planeGeometry args={[w, h]} />
         {tex ? (
-          <meshStandardMaterial
+          <meshBasicMaterial
             map={tex}
-            roughness={0.62}
-            metalness={0}
-            color={dimOthers ? "#777777" : "#ffffff"}
+            color={dimOthers ? "#5a5a5a" : "#ffffff"}
           />
         ) : (
           <meshStandardMaterial color="#241e15" roughness={0.9} />
@@ -430,7 +428,7 @@ function PaintingOnWall({
         penumbra={0.75}
         decay={1.4}
         distance={13}
-        intensity={dimOthers ? 11 : 46}
+        intensity={dimOthers ? 2 : 7}
         color="#ffe9c4"
         castShadow={shadowLight}
         shadow-mapSize={[512, 512]}
