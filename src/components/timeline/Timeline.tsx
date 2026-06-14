@@ -364,6 +364,9 @@ function Strata(props: ModeProps & { lanes: Map<string, number>; laneCount: numb
                 const ax = screenX(cam, worldX(careerMid(a))) - x0;
                 const rows = Math.max(1, Math.floor((laneH - 60) / 26));
                 const row = i % rows;
+                // anchor the bullet at the date, then keep it inside the band's
+                // padded area so early/late artists don't spill past the border
+                const left = Math.max(0, Math.min(ax - 8, wide - 16 - 14));
                 return (
                   <button
                     key={a.slug}
@@ -371,8 +374,8 @@ function Strata(props: ModeProps & { lanes: Map<string, number>; laneCount: numb
                       e.stopPropagation();
                       onArtist(a);
                     }}
-                    className="group absolute flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap focus:outline-none focus-visible:ring-1 focus-visible:ring-[--gilt]"
-                    style={{ left: ax - 8, top: row * 26 }}
+                    className="group absolute flex items-center gap-1.5 whitespace-nowrap focus:outline-none focus-visible:ring-1 focus-visible:ring-[--gilt]"
+                    style={{ left, top: row * 26 }}
                     title={`${a.name} (${a.born ?? "?"}–${a.died ?? ""})`}
                   >
                     <span
