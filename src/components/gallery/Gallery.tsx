@@ -91,6 +91,11 @@ export default function Gallery({
   const target = inspecting ? hung[inspectIdx] : null;
 
   const closeInspect = useCallback(() => setInspectIdx(null), []);
+  const requestLock = useCallback(() => {
+    // call lock() directly inside the user gesture — reliable across browsers,
+    // unlike drei's selector lookup which can miss the late-mounted overlay
+    controlsRef.current?.lock();
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -104,13 +109,13 @@ export default function Gallery({
     <div className="fixed inset-0 bg-black">
       <Canvas
         shadows={!lite}
-        dpr={lite ? [0.8, 1] : [1, 1.75]}
+        dpr={lite ? [0.8, 1] : [1, 1.5]}
         camera={{ position: [0, EYE, length / 2 - 3], fov: 62, near: 0.1, far: 120 }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05, preserveDrawingBuffer: still }}
       >
         <color attach="background" args={["#070605"]} />
         <fog attach="fog" args={["#0a0806", 26, 85]} />
-        {!lite && <SoftShadows size={22} samples={12} focus={0.6} />}
+        {!lite && <SoftShadows size={14} samples={6} focus={0.7} />}
 
         <Suspense fallback={null}>
           <Room length={length} lite={lite} />
@@ -119,7 +124,7 @@ export default function Gallery({
               key={h.painting.id}
               hung={h}
               index={i}
-              shadowLight={!lite && i % 4 === 0}
+              shadowLight={!lite && i % 6 === 0 && i < 18}
               dimOthers={inspecting && inspectIdx !== i}
             />
           ))}
@@ -172,6 +177,7 @@ export default function Gallery({
         target={target}
         onClose={closeInspect}
         onExit={onExit}
+        onEnter={requestLock}
       />
     </div>
   );
@@ -210,9 +216,9 @@ function Room({ length, lite }: { length: number; lite?: boolean }) {
       <mesh rotation-x={-Math.PI / 2} receiveShadow>
         <planeGeometry args={[ROOM_W, length]} />
         <MeshReflectorMaterial
-          blur={[280, 90]}
-          resolution={lite ? 256 : 1024}
-          mixBlur={0.9}
+          blur={[140, 50]}
+          resolution={lite ? 256 : 512}
+          mixBlur={0.7}
           mixStrength={9}
           roughness={0.65}
           depthScale={1.1}
@@ -597,6 +603,7 @@ function Overlays({
   target,
   onClose,
   onExit,
+  onEnter,
 }: {
   artist: Artist;
   locked: boolean;
@@ -604,6 +611,7 @@ function Overlays({
   target: Hung | null;
   onClose: () => void;
   onExit: () => void;
+  onEnter: () => void;
 }) {
   const { progress, active } = useProgress();
   const loading = active && progress < 100;
@@ -639,7 +647,7 @@ function Overlays({
 
       {/* click to enter / controls hint */}
       {!locked && !inspecting && !loading && (
-        <div id="lock-trigger" className="fixed inset-0 z-10 flex cursor-pointer items-end justify-center pb-20">
+        <div id="lock-trigger" onClick={onEnter} className="fixed inset-0 z-10 flex cursor-pointer items-end justify-center pb-20">
           <div className="px-7 py-4 text-center"
             style={{ background: "rgba(10,9,7,0.72)", border: "1px solid rgba(201,162,39,0.55)", backdropFilter: "blur(8px)" }}>
             <p className="font-display text-[15px] tracking-[0.22em] text-[#ece5d3]">CLICK TO ENTER</p>

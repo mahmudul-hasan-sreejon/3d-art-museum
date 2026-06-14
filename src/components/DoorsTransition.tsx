@@ -18,12 +18,13 @@ export default function DoorsTransition({
   const leftRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
   const plateRef = useRef<HTMLDivElement>(null);
-  const fired = useRef(false);
+
+  // keep the latest onDone without restarting the animation on parent re-renders
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
-    if (fired.current) return;
-    fired.current = true;
-    const tl = gsap.timeline({ onComplete: onDone });
+    const tl = gsap.timeline({ onComplete: () => onDoneRef.current() });
     tl.set(rootRef.current, { opacity: 1 })
       // doors sweep shut
       .fromTo(leftRef.current, { xPercent: -104 }, { xPercent: 0, duration: 0.65, ease: "power3.inOut" })
@@ -38,7 +39,9 @@ export default function DoorsTransition({
     return () => {
       tl.kill();
     };
-  }, [onDone]);
+    // run once per mount; onDone is read live via onDoneRef
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const doorFace: React.CSSProperties = {
     background:
