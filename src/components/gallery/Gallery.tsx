@@ -126,6 +126,7 @@ export default function Gallery({
               index={i}
               shadowLight={!lite && i % 6 === 0 && i < 18}
               dimOthers={inspecting && inspectIdx !== i}
+              artistName={artist.name}
             />
           ))}
           {/* benches */}
@@ -293,19 +294,92 @@ function Bench({ z }: { z: number }) {
 
 /* ------------------------------ paintings ------------------------------ */
 
+/** Word-wrap `text` to at most `maxLines`, ellipsising the last line. */
+function wrapText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxW: number,
+  maxLines: number
+) {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const t = cur ? `${cur} ${w}` : w;
+    if (ctx.measureText(t).width > maxW && cur) {
+      lines.push(cur);
+      cur = w;
+      if (lines.length === maxLines) break;
+    } else {
+      cur = t;
+    }
+  }
+  if (lines.length < maxLines && cur) lines.push(cur);
+  // if we ran out of lines mid-text, ellipsise the final one
+  while (lines.length && ctx.measureText(lines[lines.length - 1] + "…").width > maxW) {
+    const last = lines[lines.length - 1].replace(/\s*\S*$/, "");
+    if (!last) break;
+    lines[lines.length - 1] = last;
+  }
+  if (text !== lines.join(" ").trim() && lines.length) {
+    lines[lines.length - 1] = lines[lines.length - 1].replace(/…?$/, "…");
+  }
+  return lines;
+}
+
+/** A printed museum wall label rendered to a canvas, using the site webfonts. */
+function makePlacardTexture(title: string, subtitle: string): THREE.CanvasTexture {
+  const W = 1024;
+  const H = 390; // matches the placard plane ratio (0.42 / 0.16)
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext("2d")!;
+  const pad = 60;
+
+  // card stock + hairline border
+  ctx.fillStyle = "#e9e0cb";
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(42,39,34,0.16)";
+  ctx.lineWidth = 5;
+  ctx.strokeRect(9, 9, W - 18, H - 18);
+
+  // title — serif, up to two lines
+  ctx.fillStyle = "#221f1a";
+  ctx.textBaseline = "top";
+  ctx.letterSpacing = "0px";
+  ctx.font = '64px "Marcellus", Georgia, serif';
+  const lines = wrapText(ctx, title, W - pad * 2, 2);
+  lines.forEach((ln, i) => ctx.fillText(ln, pad, pad + i * 74));
+
+  // attribution — letter-spaced small caps
+  ctx.fillStyle = "#8a6d1c";
+  ctx.letterSpacing = "6px";
+  ctx.font = '600 38px "Archivo", system-ui, sans-serif';
+  ctx.fillText(subtitle.toUpperCase(), pad, H - pad - 38);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
 function PaintingOnWall({
   hung,
   index,
   shadowLight,
   dimOthers,
+  artistName,
 }: {
   hung: Hung;
   index: number;
   shadowLight: boolean;
   dimOthers: boolean;
+  artistName: string;
 }) {
   const { painting, pos, rotY } = hung;
   const [tex, setTex] = useState<THREE.Texture | null>(null);
+  const [labelTex, setLabelTex] = useState<THREE.CanvasTexture | null>(null);
   const [aspect, setAspect] = useState(1.3);
   const groupRef = useRef<THREE.Group>(null);
   const lightRef = useRef<THREE.SpotLight>(null);
@@ -332,6 +406,24 @@ function PaintingOnWall({
       alive = false;
     };
   }, [painting.thumbUrl]);
+
+  // wall label — drawn to a canvas; redraw once the webfonts have loaded
+  useEffect(() => {
+    let alive = true;
+    const subtitle = [artistName, painting.yearText].filter(Boolean).join(" · ");
+    const draw = () => {
+      if (!alive) return;
+      setLabelTex((prev) => {
+        prev?.dispose();
+        return makePlacardTexture(painting.title, subtitle);
+      });
+    };
+    draw();
+    document.fonts?.ready.then(draw).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [painting.title, painting.yearText, artistName]);
 
   // canvas dimensions from aspect, clamped to wall space
   const { w, h } = useMemo(() => {
@@ -416,7 +508,14 @@ function PaintingOnWall({
       {/* wall label */}
       <mesh position={[w / 2 + 0.45, -h / 2 + 0.18, 0.012]}>
         <planeGeometry args={[0.42, 0.16]} />
-        <meshStandardMaterial color="#ded4bc" roughness={0.85} />
+        {labelTex ? (
+          <meshBasicMaterial
+            map={labelTex}
+            color={dimOthers ? "#8f8f8f" : "#ffffff"}
+          />
+        ) : (
+          <meshStandardMaterial color="#ded4bc" roughness={0.85} />
+        )}
       </mesh>
 
       {/* picture light */}
