@@ -46,6 +46,43 @@ npm run dev
 Without `DATABASE_URL` set, the app serves clearly-labelled placeholder
 data so the UI can be developed offline.
 
+### With a local Postgres
+
+To work against real data locally, point `DATABASE_URL` at a local
+Postgres (see `.env.example`); `src/lib/db.ts` detects a
+`localhost`/`127.0.0.1` host and disables SSL automatically, so no
+`sslmode` is needed:
+
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/musea
+```
+
+Then seed from Wikipedia. `scripts/seed-local.sh` drives `/api/seed`
+period-by-period against the dev server, with cooldowns and
+retry-on-429 to stay under Wikipedia's rate limit (idempotent — it
+upserts). With `npm run dev` running:
+
+```bash
+curl "http://localhost:3000/api/seed?step=schema&token=$SEED_TOKEN"
+scripts/seed-local.sh medieval-gothic renaissance baroque rococo \
+  neoclassicism romanticism realism impressionism post-impressionism \
+  expressionism cubism surrealism abstract-expressionism pop-art \
+  contemporary
+```
+
+### Backfilling archive facts
+
+The seed route derives each painting's "FROM THE ARCHIVE" facts from
+leftover Wikipedia intro sentences, so works with stub articles end up
+with none. `scripts/backfill-facts.mjs` fills those from structured
+Wikidata metadata (medium, collection, genre), which exists even for
+short articles:
+
+```bash
+node --env-file=.env.local scripts/backfill-facts.mjs --dry  # preview
+node --env-file=.env.local scripts/backfill-facts.mjs        # write
+```
+
 ## Production setup
 
 1. Create a Postgres database (e.g. [Neon](https://neon.tech)).
