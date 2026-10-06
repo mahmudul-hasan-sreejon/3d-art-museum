@@ -111,5 +111,4 @@ Commons-hosted (public-domain / freely-licensed) files; for some
 20th-century works only English-Wikipedia-hosted images exist and these
 are flagged with a `license` column in the database.
 
-`?lite=1` on a museum URL disables shadows/post-processing for
-low-powered devices.
+`?lite=1` on a museum URL disables shadows/post-processing for low-powered devices.
